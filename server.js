@@ -4,6 +4,8 @@ const { MongoClient } = require("mongodb");
 const jobRoutes = require("./routes/jobRoutes"); // Import your job routes
 require("dotenv").config();
 const cron = require("node-cron"); // Import node-cron
+const cors = require("cors"); // Import the cors package
+const twilio = require("twilio"); // Add this line
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -11,17 +13,20 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017";
 const MONGODB_DATABASE = process.env.MONGODB_DATABASE || "job_data";
 const COLLECTION_NAME = "jobs";
 
+// Enable CORS for all routes
+app.use(cors()); // Add this line before any other middleware or route definitions
+
 // Middleware to parse JSON
 app.use(express.json());
 
 // Use your job routes
-app.use("/api/", jobRoutes); // Mount job routes at /jobs
+app.use("/api/", jobRoutes); // Mount job routes at /api
 
 // Function to start the scraper
 async function startScraper() {
   try {
     console.log("Starting scraping process...");
-    await runNaukriScraper({ headless: true }); //  Run headless in production
+    const newJobs = await runNaukriScraper({ headless: true }); // Await the scraping and get new jobs
     console.log("Scraping process completed.");
   } catch (error) {
     console.error("Error during scraping:", error);
@@ -32,7 +37,7 @@ async function startScraper() {
 cron.schedule("0 0,12 * * *", async () => {
   console.log("Running scraper at 00:00 and 12:00");
   try {
-    await startScraper();
+    await startScraper(); // Await the startScraper function
     console.log("Scraping completed for this schedule.");
   } catch (error) {
     console.error("Error during scheduled scraping:", error);

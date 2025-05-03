@@ -1,7 +1,7 @@
-// scraper.js
 const puppeteer = require("puppeteer");
 const { MongoClient } = require("mongodb");
 require("dotenv").config(); // Load environment variables from .env
+const twilio = require("twilio"); // Added Twilio library
 
 // Environment variables for configuration
 const NAUKRI_BASE_URL = process.env.NAUKRI_BASE_URL || "https://www.naukri.com";
@@ -20,7 +20,7 @@ const NAUKRI_PAGES_TO_SCRAPE =
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017"; // Default MongoDB URI
 const MONGODB_DATABASE = process.env.MONGODB_DATABASE || "job_data"; // Default database name
 const COLLECTION_NAME = "jobs";
-const MAX_JOB_AGE_DAYS = parseInt(process.env.MAX_JOB_AGE_DAYS, 10) || 30; // Add this line
+const MAX_JOB_AGE_DAYS = parseInt(process.env.MAX_JOB_AGE_DAYS, 10) || 30;
 
 /**
  * Connects to the MongoDB database.
@@ -198,9 +198,9 @@ async function scrapeNaukri(query, location, experience, client, options = {}) {
 
       // Get all job listing elements
       const jobElements = await page.$$(".srp-jobtuple-wrapper");
-      // console.log(
-      //  `Found ${jobElements.length} job listings on page ${pageNum}`
-      // );
+      console.log(
+        `Found ${jobElements.length} job listings on page ${pageNum}`
+      );
 
       for (const jobElement of jobElements) {
         try {
@@ -224,11 +224,11 @@ async function scrapeNaukri(query, location, experience, client, options = {}) {
                 },
                 { upsert: true } // Insert if not found, update if found
               );
-              // if (result.upsertedCount > 0) {
-              //  console.log(`Inserted job: ${jobDetails.title}`);
-              // } else {
-              //  console.log(`Updated job: ${jobDetails.title}`);
-              // }
+              if (result.upsertedCount > 0) {
+                console.log(`Inserted job: ${jobDetails.title}`);
+              } else {
+                console.log(`Updated job: ${jobDetails.title}`);
+              }
             } catch (error) {
               console.error("Error inserting/updating job:", error);
             }
@@ -266,7 +266,12 @@ async function runNaukriScraper(options = {}) {
     const deleteResult = await client
       .db(MONGODB_DATABASE)
       .collection(COLLECTION_NAME)
-      .deleteMany({ dateCrawled: { $lt: cutoffDate } }); // Delete jobs older than cutoff
+      .deleteMany({
+        $or: [
+          { dateCrawled: { $lt: cutoffDate } },
+          { postedDate: { $regex: /30\+ Days Ago/i } }, // Delete jobs with "30+ Days Ago"
+        ],
+      }); // Delete jobs older than cutoff
     console.log(`Deleted ${deleteResult.deletedCount} old jobs.`);
 
     for (const query of NAUKRI_SEARCH_QUERIES) {
