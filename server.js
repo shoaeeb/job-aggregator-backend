@@ -5,7 +5,6 @@ const jobRoutes = require("./routes/jobRoutes"); // Import your job routes
 require("dotenv").config();
 const cron = require("node-cron"); // Import node-cron
 const cors = require("cors"); // Import the cors package
-const twilio = require("twilio"); // Add this line
 
 const app = express();
 const port = process.env.PORT || 3000;
