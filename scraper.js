@@ -1,7 +1,6 @@
 const puppeteer = require("puppeteer");
 const { MongoClient } = require("mongodb");
 require("dotenv").config(); // Load environment variables from .env
-const twilio = require("twilio"); // Added Twilio library
 
 // Environment variables for configuration
 const NAUKRI_BASE_URL = process.env.NAUKRI_BASE_URL || "https://www.naukri.com";
